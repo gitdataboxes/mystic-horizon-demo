@@ -4,7 +4,11 @@ Prototype / demo copy of a personal local-first phone agent. Not a production se
 
 This repo is a sanitized snapshot published as a hiring/portfolio sample. Agent homes, API keys, model weights, session logs, and identifying data are not included.
 
-Screenshots and a short HUD clip will live here.
+## Demo
+
+[Watch the HUD demo on Loom](https://www.loom.com/share/803780d4aa5342349cc6cdb3e74bed15)
+
+CRT phosphor HUD: live transcript, traces, particle cloud, lightning tool-calls. Short clip of the running agent.
 
 ## What it does
 
