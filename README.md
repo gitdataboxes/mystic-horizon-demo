@@ -10,6 +10,10 @@ This repo is a sanitized snapshot published as a hiring/portfolio sample. Agent 
 
 [Watch the HUD demo on Loom](https://www.loom.com/share/803780d4aa5342349cc6cdb3e74bed15) — live transcript, traces, particle cloud, lightning tool-calls.
 
+Initial setup (model download and service boot):
+
+![Setup](docs/setup.png)
+
 ## What it does
 
 The owner surface is a CRT phosphor HUD: live transcript, oscilloscope-style traces, provider ping, and the agent as a particle cloud with people in orbit. Tool calls flash as lightning on the graph. You talk to it over local LiveKit (mic and speakers) or optionally Twilio.
