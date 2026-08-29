@@ -1,0 +1,600 @@
+<section
+  class="page"
+  id="setup-page"
+  data-llm-mode="{{llm_mode}}"
+  data-llm-model="{{llm_model}}"
+  data-stt-mode="{{stt_mode}}"
+  data-tts-mode="{{tts_mode}}"
+  data-tts-voice="{{tts_voice}}"
+  data-has-twilio="{{has_twilio}}"
+  data-prepare-in-progress="{{prepare_in_progress}}"
+>
+  <header class="page-header">
+    <p class="eyebrow">Setup</p>
+    <h1>Pick your stack and go</h1>
+    <p class="lede">Choose cloud or local for each layer, add keys where needed, and let the dashboard prep the rest.</p>
+  </header>
+
+  <form method="post" action="/dashboard/setup" class="stack-form" id="setup-form" novalidate>
+    <section class="panel onboard-card">
+      <div class="panel-head">
+        <div>
+          <h2>LLM</h2>
+          <p class="lede">Pick OpenRouter for the fast path, or point Mystic Horizon at your own local OpenAI-compatible endpoint.</p>
+        </div>
+      </div>
+
+      <div class="mode-toggle" data-provider="llm" role="radiogroup" aria-label="LLM mode">
+        <label>
+          <input type="radio" name="llm_mode" value="cloud" checked>
+          <span>Cloud</span>
+        </label>
+        <label>
+          <input type="radio" name="llm_mode" value="local">
+          <span>Local</span>
+        </label>
+      </div>
+
+      <div class="grid two-up mode-fields" data-provider="llm" data-mode="cloud">
+        <div>
+          <label>
+            <span>OpenRouter API key</span>
+            <input type="password" name="openrouter_key" value="{{openrouter_key}}" autocomplete="off">
+          </label>
+          <p class="field-error" data-error-for="openrouter_key" hidden></p>
+        </div>
+
+        <label>
+          <span>Model</span>
+          <select name="llm_model" id="llm-model">
+            <option value="openai/gpt-5.5">gpt-5.5 (Latest)</option>
+            <option value="openai/gpt-4o">gpt-4o (True OG)</option>
+            <option value="openai/gpt-5.4-mini">gpt-5.4-mini (Best)</option>
+            <option value="openai/gpt-5.4">gpt-5.4 (Biggest)</option>
+            <option value="anthropic/claude-sonnet-4.6">claude-sonnet-4.6 (Slowest)</option>
+            <option value="mistralai/mistral-medium-3.1">mistral-medium-3.1 (Fastest)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="mode-fields" data-provider="llm" data-mode="local" hidden>
+        <label>
+          <span>Local endpoint</span>
+          <input type="text" name="llm_local_url" value="{{llm_local_url}}" placeholder="http://localhost:1234/v1">
+        </label>
+        <p class="field-hint">Default works well with LM Studio-style local servers.</p>
+      </div>
+    </section>
+
+    <section class="panel onboard-card">
+      <div class="panel-head">
+        <div>
+          <h2>Speech to Text</h2>
+          <p class="lede">Deepgram is instant to start. Moonshine keeps transcription local on your machine.</p>
+        </div>
+      </div>
+
+      <div class="mode-toggle" data-provider="stt" role="radiogroup" aria-label="STT mode">
+        <label>
+          <input type="radio" name="stt_mode" value="cloud" checked>
+          <span>Cloud</span>
+        </label>
+        <label>
+          <input type="radio" name="stt_mode" value="local">
+          <span>Local</span>
+        </label>
+      </div>
+
+      <div class="mode-fields" data-provider="stt" data-mode="cloud">
+        <label>
+          <span>Deepgram API key</span>
+          <input type="password" name="deepgram_key" value="{{deepgram_key}}" autocomplete="off">
+        </label>
+        <p class="field-error" data-error-for="deepgram_key" hidden></p>
+      </div>
+
+      <div class="mode-fields" data-provider="stt" data-mode="local" hidden>
+        <p class="field-hint">Downloads Moonshine medium model (~250 MB)</p>
+      </div>
+    </section>
+
+    <section class="panel onboard-card">
+      <div class="panel-head">
+        <div>
+          <h2>Text to Speech</h2>
+          <p class="lede">Inworld is quick to connect. Pocket keeps speech local and downloads the bundled voice model set.</p>
+        </div>
+      </div>
+
+      <div class="mode-toggle" data-provider="tts" role="radiogroup" aria-label="TTS mode">
+        <label>
+          <input type="radio" name="tts_mode" value="cloud" checked>
+          <span>Cloud</span>
+        </label>
+        <label>
+          <input type="radio" name="tts_mode" value="local">
+          <span>Local</span>
+        </label>
+      </div>
+
+      <div class="mode-fields" data-provider="tts" data-mode="cloud">
+        <div>
+          <label>
+            <span>Inworld API key</span>
+            <input type="password" name="inworld_key" value="{{inworld_key}}" autocomplete="off">
+          </label>
+          <p class="field-error" data-error-for="inworld_key" hidden></p>
+        </div>
+      </div>
+
+      <div class="mode-fields" data-provider="tts" data-mode="local" hidden>
+        <p class="field-hint">Downloads Pocket TTS ONNX model</p>
+      </div>
+
+      <label>
+        <span>Voice</span>
+        <select name="tts_voice" id="tts-voice">
+          <option value="Hades">Hades (English Male)</option>
+          <option value="Mark">Mark (American Male)</option>
+          <option value="Clive">Clive (British Male)</option>
+          <option value="Olivia">Olivia (British Female)</option>
+          <option value="Orietta">Orietta (Italian Female)</option>
+          <option value="Pippa">Pippa (Australian Female)</option>
+        </select>
+      </label>
+    </section>
+
+    <p class="field-error" id="setup-form-error" hidden></p>
+    <button type="submit" id="setup-submit">Get Started</button>
+  </form>
+
+  <section class="panel preparing" id="prepare-panel" hidden>
+    <div>
+      <p class="eyebrow">Preparing</p>
+      <h2>Setting things up</h2>
+      <p class="lede">Downloading models and configuring services. Each step shows live progress below.</p>
+    </div>
+
+    <ol class="step-list" id="prepare-steps"></ol>
+    <p class="field-error" id="prepare-error" hidden></p>
+    <button type="button" id="prepare-retry" hidden>Retry</button>
+  </section>
+
+  <script>
+    (function () {
+      const page = document.getElementById("setup-page");
+      const form = document.getElementById("setup-form");
+      const submitButton = document.getElementById("setup-submit");
+      const preparePanel = document.getElementById("prepare-panel");
+      const prepareSteps = document.getElementById("prepare-steps");
+      const prepareError = document.getElementById("prepare-error");
+      const retryButton = document.getElementById("prepare-retry");
+      const formError = document.getElementById("setup-form-error");
+      const llmModel = document.getElementById("llm-model");
+      const voiceSelect = document.getElementById("tts-voice");
+      let stream = null;
+      let isPreparing = false;
+      let stepState = [];
+      let readyPollStarted = false;
+
+      function ensureOption(select, value, label) {
+        if (!select || !value) return;
+        const options = Array.from(select.options || []);
+        if (!options.some(function (option) { return option.value === value; })) {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = label;
+          select.appendChild(option);
+        }
+        select.value = value;
+      }
+
+      function selectedMode(provider) {
+        const selected = form.querySelector('input[name="' + provider + '_mode"]:checked');
+        return selected ? selected.value : "cloud";
+      }
+
+      function setFieldError(name, message) {
+        const target = form.querySelector('[data-error-for="' + name + '"]');
+        if (!target) return;
+        target.textContent = message;
+        target.hidden = !message;
+      }
+
+      function clearErrors() {
+        Array.from(form.querySelectorAll(".field-error")).forEach(function (node) {
+          node.textContent = "";
+          node.hidden = true;
+        });
+      }
+
+      function syncProvider(provider) {
+        const mode = selectedMode(provider);
+        Array.from(form.querySelectorAll('.mode-fields[data-provider="' + provider + '"]')).forEach(function (node) {
+          node.hidden = node.getAttribute("data-mode") !== mode;
+        });
+      }
+
+      function syncRequiredFields() {
+        const openrouter = form.elements.openrouter_key;
+        const deepgram = form.elements.deepgram_key;
+        const inworld = form.elements.inworld_key;
+        if (openrouter) openrouter.required = selectedMode("llm") === "cloud";
+        if (deepgram) deepgram.required = selectedMode("stt") === "cloud";
+        if (inworld) inworld.required = selectedMode("tts") === "cloud";
+      }
+
+      function syncForm() {
+        syncProvider("llm");
+        syncProvider("stt");
+        syncProvider("tts");
+        syncRequiredFields();
+      }
+
+      function validateCloudFields() {
+        const requiredFields = [
+          ["llm", "openrouter_key", "OpenRouter API key is required for cloud LLM."],
+          ["stt", "deepgram_key", "Deepgram API key is required for cloud STT."],
+          ["tts", "inworld_key", "Inworld API key is required for cloud TTS."]
+        ];
+        let isValid = true;
+        requiredFields.forEach(function (entry) {
+          const provider = entry[0];
+          const fieldName = entry[1];
+          const message = entry[2];
+          if (selectedMode(provider) !== "cloud") return;
+          const field = form.elements[fieldName];
+          if (!field || String(field.value || "").trim()) return;
+          setFieldError(fieldName, message);
+          isValid = false;
+        });
+        return isValid;
+      }
+
+      function buildSteps() {
+        var steps = [{ label: "Saving configuration", state: "done", details: [] }];
+        steps.push({ label: "Checking voice server...", state: "pending", details: [] });
+        if (selectedMode("stt") === "local") {
+          steps.push({ label: "Downloading STT model...", state: "pending", details: [] });
+        } else {
+          steps.push({ label: "Installing speech recognition...", state: "pending", details: [] });
+        }
+        if (selectedMode("tts") === "local") {
+          steps.push({ label: "Downloading TTS model...", state: "pending", details: [] });
+        } else {
+          steps.push({ label: "Installing speech synthesis...", state: "pending", details: [] });
+        }
+        steps.push({ label: "Downloading embedding model...", state: "pending", details: [] });
+        steps.push({ label: "Launching agent...", state: "pending", details: [] });
+        return steps;
+      }
+
+      function renderSteps() {
+        if (!prepareSteps) return;
+        prepareSteps.innerHTML = "";
+        stepState.forEach(function (step, index) {
+          var item = document.createElement("li");
+          item.className = step.state;
+          item.setAttribute("data-step-index", index);
+
+          var header = document.createElement("div");
+          header.className = "step-header";
+          header.textContent = step.label;
+          item.appendChild(header);
+
+          var terminal = document.createElement("div");
+          terminal.className = "step-terminal";
+          var content = document.createElement("div");
+          content.className = "step-terminal-content";
+          step.details.forEach(function (line) {
+            var div = document.createElement("div");
+            div.textContent = line;
+            content.appendChild(div);
+          });
+          terminal.appendChild(content);
+          item.appendChild(terminal);
+
+          prepareSteps.appendChild(item);
+        });
+      }
+
+      function updateTerminal(index) {
+        var items = prepareSteps.querySelectorAll("li");
+        if (index >= items.length) return;
+        var content = items[index].querySelector(".step-terminal-content");
+        if (!content) return;
+        var step = stepState[index];
+        content.innerHTML = "";
+        step.details.forEach(function (line) {
+          var div = document.createElement("div");
+          div.textContent = line;
+          content.appendChild(div);
+        });
+        content.scrollTop = content.scrollHeight;
+      }
+
+      function addDetail(message, replace) {
+        var activeIndex = stepState.findIndex(function (s) { return s.state === "active"; });
+        if (activeIndex === -1) return;
+        var step = stepState[activeIndex];
+        if (replace && step.details.length > 0) {
+          step.details[step.details.length - 1] = message;
+        } else {
+          step.details.push(message);
+        }
+        updateTerminal(activeIndex);
+      }
+
+      function activateStep(label) {
+        var index = stepState.findIndex(function (step) { return step.label === label; });
+        if (index === -1) return;
+        stepState = stepState.map(function (step, stepIndex) {
+          if (stepIndex < index) return { label: step.label, state: "done", details: step.details };
+          if (stepIndex === index) return { label: step.label, state: "active", details: step.details };
+          if (step.state === "done") return step;
+          return { label: step.label, state: "pending", details: step.details };
+        });
+        renderSteps();
+      }
+
+      function markReady() {
+        stepState = stepState.map(function (step) {
+          return { label: step.label, state: "done", details: step.details };
+        });
+        renderSteps();
+      }
+
+      function markError(message) {
+        isPreparing = false;
+        readyPollStarted = false;
+        var activeIndex = stepState.findIndex(function (step) { return step.state === "active"; });
+        var targetIndex = activeIndex >= 0 ? activeIndex : Math.max(0, stepState.length - 2);
+        stepState = stepState.map(function (step, index) {
+          if (index < targetIndex) return { label: step.label, state: "done", details: step.details };
+          if (index === targetIndex) return { label: step.label, state: "error", details: step.details };
+          return { label: step.label, state: "pending", details: step.details };
+        });
+        renderSteps();
+        if (prepareError) {
+          prepareError.textContent = message;
+          prepareError.hidden = false;
+        }
+        if (retryButton) retryButton.hidden = false;
+      }
+
+      function clearPrepareError() {
+        if (prepareError) {
+          prepareError.textContent = "";
+          prepareError.hidden = true;
+        }
+        if (retryButton) retryButton.hidden = true;
+      }
+
+      function redirectWhenRuntimeReady() {
+        if (readyPollStarted) return;
+        readyPollStarted = true;
+        var attempts = 0;
+
+        function tryRedirect() {
+          if (!isPreparing) {
+            readyPollStarted = false;
+            return;
+          }
+          attempts++;
+          if (attempts === 3) {
+            addDetail("Waiting for server...", false);
+          }
+          fetch("/health", { credentials: "same-origin" })
+            .then(function (response) {
+              if (response.ok) {
+                addDetail("Server is ready!", false);
+                markReady();
+                window.setTimeout(function () {
+                  window.location.assign("/dashboard/page/home");
+                }, 400);
+                return;
+              }
+              window.setTimeout(tryRedirect, 750);
+            })
+            .catch(function () {
+              window.setTimeout(tryRedirect, 750);
+            });
+        }
+
+        tryRedirect();
+      }
+
+      async function startPrepareRequest() {
+        clearPrepareError();
+        if (stepState.some(function (step) { return step.state === "pending"; })) {
+          const next = stepState.find(function (step) { return step.state === "pending"; });
+          if (next) activateStep(next.label);
+        }
+        const response = await fetch("/dashboard/f/prepare", {
+          method: "POST",
+          credentials: "same-origin"
+        });
+        if (!response.ok) {
+          throw new Error("Could not start preparation.");
+        }
+      }
+
+      function showPreparingState() {
+        isPreparing = true;
+        readyPollStarted = false;
+        stepState = buildSteps();
+        renderSteps();
+        page.querySelectorAll(".page-header, #setup-form").forEach(function (el) {
+          el.hidden = true;
+        });
+        if (preparePanel) preparePanel.hidden = false;
+      }
+
+      function readResponsePayload(response) {
+        return response.json().catch(function () {
+          return {};
+        });
+      }
+
+      function bindStream() {
+        if (stream || !window.EventSource) return;
+        stream = new EventSource("/dashboard/stream");
+        stream.addEventListener("prepare.step", function (event) {
+          if (!isPreparing) return;
+          try {
+            var payload = JSON.parse(event.data);
+            if (payload && payload.label) {
+              activateStep(String(payload.label));
+            }
+          } catch (_error) {}
+        });
+        stream.addEventListener("prepare.detail", function (event) {
+          if (!isPreparing) return;
+          try {
+            var payload = JSON.parse(event.data);
+            if (payload && payload.message) {
+              addDetail(String(payload.message), !!payload.replace);
+            }
+          } catch (_error) {}
+        });
+        stream.addEventListener("prepare.done", function () {
+          if (!isPreparing) return;
+          stream.close();
+          activateStep("Launching agent...");
+          addDetail("Starting daemon process...", false);
+          redirectWhenRuntimeReady();
+        });
+        stream.addEventListener("prepare.error", function (event) {
+          if (!isPreparing) return;
+          var message = "Preparation failed.";
+          try {
+            var payload = JSON.parse(event.data);
+            if (payload && payload.error) {
+              message = String(payload.error);
+            }
+          } catch (_error) {}
+          markError(message);
+        });
+        stream.onerror = function () {
+          if (!isPreparing || stream.readyState === EventSource.CLOSED) return;
+          stream.close();
+          activateStep("Launching agent...");
+          addDetail("Starting daemon process...", false);
+          redirectWhenRuntimeReady();
+        };
+        window.addEventListener("beforeunload", function () {
+          if (stream) stream.close();
+        }, { once: true });
+      }
+
+      ensureOption(llmModel, page.dataset.llmModel || "openai/gpt-5.5", "Current: " + (page.dataset.llmModel || "openai/gpt-5.5"));
+      ensureOption(voiceSelect, page.dataset.ttsVoice || "Olivia", "Current: " + (page.dataset.ttsVoice || "Olivia"));
+
+      Array.from(form.querySelectorAll('input[name="llm_mode"]')).forEach(function (input) {
+        input.checked = input.value === (page.dataset.llmMode || "cloud");
+      });
+      Array.from(form.querySelectorAll('input[name="stt_mode"]')).forEach(function (input) {
+        input.checked = input.value === (page.dataset.sttMode || "cloud");
+      });
+      Array.from(form.querySelectorAll('input[name="tts_mode"]')).forEach(function (input) {
+        input.checked = input.value === (page.dataset.ttsMode || "cloud");
+      });
+
+      syncForm();
+      bindStream();
+      if (String(page.dataset.prepareInProgress || "").toLowerCase() === "true") {
+        showPreparingState();
+      }
+
+      Array.from(form.querySelectorAll('input[type="radio"]')).forEach(function (input) {
+        input.addEventListener("change", function () {
+          clearErrors();
+          syncForm();
+        });
+      });
+
+      Array.from(form.elements).forEach(function (element) {
+        if (!element || typeof element.addEventListener !== "function") return;
+        element.addEventListener("input", function () {
+          if (formError) {
+            formError.textContent = "";
+            formError.hidden = true;
+          }
+          const fieldName = element.getAttribute("name");
+          if (fieldName) {
+            setFieldError(fieldName, "");
+          }
+        });
+      });
+
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        clearErrors();
+        clearPrepareError();
+        if (!validateCloudFields()) return;
+        if (submitButton) submitButton.disabled = true;
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            credentials: "same-origin",
+            headers: { "Accept": "application/json" }
+          });
+          const payload = await readResponsePayload(response);
+
+          if (response.status === 422) {
+            const errors = payload && payload.errors ? payload.errors : {};
+            Object.keys(errors).forEach(function (key) {
+              setFieldError(key, String(errors[key]));
+            });
+            return;
+          }
+
+          if (!response.ok || !payload || payload.ok !== true) {
+            const message = payload && payload.error ? String(payload.error) : "Could not save setup.";
+            if (formError) {
+              formError.textContent = message;
+              formError.hidden = false;
+            }
+            return;
+          }
+
+          showPreparingState();
+          await startPrepareRequest();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Could not save setup.";
+          if (formError) {
+            formError.textContent = message;
+            formError.hidden = false;
+          }
+          isPreparing = false;
+          page.querySelectorAll(".page-header, #setup-form").forEach(function (el) {
+            el.hidden = false;
+          });
+          if (preparePanel) preparePanel.hidden = true;
+        } finally {
+          if (submitButton) submitButton.disabled = false;
+        }
+      });
+
+      if (retryButton) {
+        retryButton.addEventListener("click", async function () {
+          retryButton.disabled = true;
+          isPreparing = true;
+          readyPollStarted = false;
+          stepState = buildSteps();
+          renderSteps();
+          try {
+            await startPrepareRequest();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "Could not restart preparation.";
+            markError(message);
+          } finally {
+            retryButton.disabled = false;
+          }
+        });
+      }
+    })();
+  </script>
+</section>

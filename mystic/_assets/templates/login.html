@@ -1,0 +1,16 @@
+<section class="page">
+  <header class="page-header">
+    <p class="eyebrow">Dashboard Access</p>
+    <h1>Enter your dashboard token</h1>
+    <p class="lede">Use the one-time token printed by `mystic-horizon setup` or `mystic-horizon dashboard token`.</p>
+  </header>
+  <form method="post" action="/dashboard/login" class="stack-form">
+    <input type="hidden" name="next" value="{{next_path}}">
+    <label>
+      <span>Token</span>
+      <input type="password" name="token" placeholder="Paste dashboard token">
+    </label>
+    <button type="submit">Continue</button>
+  </form>
+  <p class="error-copy">{{error}}</p>
+</section>

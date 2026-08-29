@@ -1,0 +1,1 @@
+window.htmx = window.htmx || {};

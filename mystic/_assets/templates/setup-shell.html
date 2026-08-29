@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="manifest" href="/static/manifest.json">
+  <script defer src="/static/htmx.min.js"></script>
+  <script defer src="/static/htmx-sse.js"></script>
+  <script>if("serviceWorker"in navigator)navigator.serviceWorker.register("/static/sw.js")</script>
+</head>
+<body class="setup-shell">
+  <main class="setup-main">
+    {{{content}}}
+  </main>
+</body>
+</html>

@@ -1,0 +1,304 @@
+<section class="page settings-page" id="settings-page">
+  <header class="page-header settings-header">
+    <p class="eyebrow">Settings</p>
+    <h1>Connections and defaults</h1>
+    <p class="lede">A small set of defaults that control how this agent listens, speaks, and reaches out.</p>
+  </header>
+
+  <form method="post" action="/dashboard/settings" class="settings-shell settings-form" id="settings-form">
+    <section class="settings-section">
+      <div class="settings-section-head">
+        <div>
+          <p class="settings-section-kicker">Core stack</p>
+          <h2>Voice & AI</h2>
+        </div>
+      </div>
+
+      <div class="settings-control-grid">
+        <label class="settings-control">
+          <span>Speech to text</span>
+          <select name="stt_provider" id="stt-provider">
+            <option value="" {{#stt_is_none}}selected{{/stt_is_none}}>Choose later</option>
+            <option value="moonshine" {{#stt_is_moonshine}}selected{{/stt_is_moonshine}}>Moonshine Voice (local)</option>
+            <option value="deepgram" {{#stt_is_deepgram}}selected{{/stt_is_deepgram}}>Deepgram (cloud)</option>
+          </select>
+        </label>
+
+        <label class="settings-control">
+          <span>Text to speech</span>
+          <select name="tts_provider" id="tts-provider">
+            <option value="" {{#tts_is_none}}selected{{/tts_is_none}}>Choose later</option>
+            <option value="pocket" {{#tts_is_pocket}}selected{{/tts_is_pocket}}>Pocket TTS ONNX (local)</option>
+            <option value="inworld" {{#tts_is_inworld}}selected{{/tts_is_inworld}}>Inworld (cloud)</option>
+          </select>
+        </label>
+
+        <label id="deepgram-key-wrap" class="settings-control" {{^show_deepgram_key}}hidden{{/show_deepgram_key}}>
+          <span>Deepgram API key</span>
+          <input type="password" name="deepgram_key" value="{{deepgram_key}}" autocomplete="off">
+        </label>
+
+        <label id="inworld-key-wrap" class="settings-control" {{^show_inworld_key}}hidden{{/show_inworld_key}}>
+          <span>Inworld API key</span>
+          <input type="password" name="inworld_key" value="{{inworld_key}}" autocomplete="off">
+        </label>
+
+        <label class="settings-control settings-wide-field">
+          <span>OpenRouter API key</span>
+          <input type="password" name="openrouter_key" value="{{openrouter_key}}" autocomplete="off">
+        </label>
+      </div>
+
+      {{#show_voice_setup}}
+      <div class="settings-setup-callout">
+        <div>
+          <strong>Additional setup needed for voice.</strong>
+          <p id="prepare-feedback" class="settings-setup-message" aria-live="polite">
+            {{#prepare_in_progress}}Setting up voice...{{/prepare_in_progress}}
+            {{^prepare_in_progress}}Save settings first, then run setup to download or check the needed files.{{/prepare_in_progress}}
+          </p>
+        </div>
+        <button
+          id="prepare-button"
+          class="settings-secondary-action"
+          type="button"
+          hx-post="/dashboard/f/prepare"
+          hx-target="#prepare-feedback"
+          hx-swap="outerHTML"
+          {{#prepare_in_progress}}disabled{{/prepare_in_progress}}
+        >Run Setup</button>
+      </div>
+      {{/show_voice_setup}}
+    </section>
+
+    <section class="settings-section">
+      <div class="settings-section-head">
+        <div>
+          <p class="settings-section-kicker">Identity</p>
+          <h2>Agent</h2>
+        </div>
+      </div>
+
+      <div class="settings-control-grid settings-control-grid--three">
+        <label class="settings-control">
+          <span>Agent name</span>
+          <input type="text" name="agent_name" value="{{agent_name}}">
+        </label>
+        <label class="settings-control">
+          <span>Voice</span>
+          <select name="voice_id" id="voice-id">
+            {{#voice_is_custom}}<option value="{{voice_id}}" selected>Current: {{voice_id}}</option>{{/voice_is_custom}}
+            <option value="Hades" {{#voice_is_hades}}selected{{/voice_is_hades}}>Hades (English Male)</option>
+            <option value="Mark" {{#voice_is_mark}}selected{{/voice_is_mark}}>Mark (American Male)</option>
+            <option value="Clive" {{#voice_is_clive}}selected{{/voice_is_clive}}>Clive (British Male)</option>
+            <option value="Olivia" {{#voice_is_olivia}}selected{{/voice_is_olivia}}>Olivia (British Female)</option>
+            <option value="Orietta" {{#voice_is_orietta}}selected{{/voice_is_orietta}}>Orietta (Italian Female)</option>
+            <option value="Pippa" {{#voice_is_pippa}}selected{{/voice_is_pippa}}>Pippa (Australian Female)</option>
+          </select>
+        </label>
+        <label class="settings-control">
+          <span>Owner phone</span>
+          <input type="text" name="owner_phone" value="{{owner_phone}}">
+        </label>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <div class="settings-section-head">
+        <div>
+          <p class="settings-section-kicker">Calls</p>
+          <h2>Phone</h2>
+        </div>
+        {{#twilio_configured}}<span class="settings-mini-status is-ok">Number saved</span>{{/twilio_configured}}
+        {{#twilio_draft_ready}}<span class="settings-mini-status is-muted">Credentials saved</span>{{/twilio_draft_ready}}
+      </div>
+
+      <div class="settings-control-grid">
+        <label class="settings-control">
+          <span>Twilio Account SID</span>
+          <input type="text" name="twilio_sid" value="{{twilio_sid}}">
+        </label>
+        <label class="settings-control">
+          <span>Twilio Auth Token</span>
+          <input type="password" name="twilio_auth_token" placeholder="Leave as-is if unchanged" autocomplete="off">
+        </label>
+        <label class="settings-control settings-wide-field">
+          <span>Twilio Phone</span>
+          <input type="text" name="twilio_phone" value="{{twilio_phone}}">
+        </label>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <div class="settings-section-head">
+        <div>
+          <p class="settings-section-kicker">Messages</p>
+          <h2>Email</h2>
+        </div>
+      </div>
+
+      <div class="settings-control-grid">
+        <label class="settings-control">
+          <span>SMTP host</span>
+          <input type="text" name="smtp_host" value="{{smtp_host}}">
+        </label>
+        <label class="settings-control">
+          <span>SMTP port</span>
+          <input type="number" name="smtp_port" value="{{smtp_port}}">
+        </label>
+        <label class="settings-control">
+          <span>SMTP username</span>
+          <input type="text" name="smtp_username" value="{{smtp_username}}">
+        </label>
+        <label class="settings-control">
+          <span>SMTP password</span>
+          <input type="password" name="smtp_password" placeholder="Leave as-is if unchanged" autocomplete="off">
+        </label>
+        <label class="settings-control settings-wide-field">
+          <span>SMTP from address</span>
+          <input type="text" name="smtp_from" value="{{smtp_from}}">
+        </label>
+      </div>
+    </section>
+
+    <div class="settings-actions">
+      <p id="settings-dirty-note">Changes are saved to this agent only.</p>
+      <button type="submit" class="settings-primary-action">Save Settings</button>
+    </div>
+  </form>
+
+  <section class="settings-shell settings-section settings-mobile-section">
+    <div class="settings-section-head">
+      <div>
+        <p class="settings-section-kicker">Remote dashboard</p>
+        <h2>Mobile Access</h2>
+      </div>
+    </div>
+
+    {{#tailscale_ready}}
+    <div class="settings-mobile-row">
+      <span class="settings-mini-status is-ok">Tailscale connected</span>
+      {{#tailscale_url}}
+      <div class="settings-url-row">
+        <code id="ts-url">{{tailscale_url}}/dashboard</code>
+        <button type="button" id="copy-ts-url" class="settings-secondary-action">Copy</button>
+      </div>
+      {{/tailscale_url}}
+      {{^tailscale_url}}
+      <p class="field-hint">Run <code>mystic-horizon setup</code> to enable Funnel.</p>
+      {{/tailscale_url}}
+    </div>
+    {{/tailscale_ready}}
+
+    {{^tailscale_ready}}
+    <div class="settings-mobile-row">
+      <span class="settings-mini-status is-warning">Tailscale unavailable</span>
+      <p class="field-hint">{{tailscale_reason}}</p>
+      <p class="field-hint">Install Tailscale for mobile access: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer">tailscale.com/download</a></p>
+    </div>
+    {{/tailscale_ready}}
+  </section>
+
+  <script>
+    (function () {
+      const form = document.getElementById("settings-form");
+      const sttSelect = document.getElementById("stt-provider");
+      const ttsSelect = document.getElementById("tts-provider");
+      const deepgramWrap = document.getElementById("deepgram-key-wrap");
+      const inworldWrap = document.getElementById("inworld-key-wrap");
+      const prepareButton = document.getElementById("prepare-button");
+      const dirtyNote = document.getElementById("settings-dirty-note");
+      const copyButton = document.getElementById("copy-ts-url");
+      const tsUrl = document.getElementById("ts-url");
+      let dirty = false;
+
+      function syncProviderFields() {
+        if (deepgramWrap && sttSelect) {
+          deepgramWrap.hidden = sttSelect.value !== "deepgram";
+        }
+        if (inworldWrap && ttsSelect) {
+          inworldWrap.hidden = ttsSelect.value !== "inworld";
+        }
+      }
+
+      function setPrepareFeedback(text) {
+        const target = document.getElementById("prepare-feedback");
+        if (target) {
+          target.textContent = text;
+          target.classList.add("settings-setup-message");
+        }
+      }
+
+      function markDirty() {
+        if (dirty) return;
+        dirty = true;
+        if (dirtyNote) {
+          dirtyNote.textContent = "Unsaved changes. Save before running setup.";
+        }
+        if (prepareButton) {
+          prepareButton.disabled = true;
+        }
+        setPrepareFeedback("Save settings before running setup.");
+      }
+
+      syncProviderFields();
+      if (sttSelect) sttSelect.addEventListener("change", syncProviderFields);
+      if (ttsSelect) ttsSelect.addEventListener("change", syncProviderFields);
+      if (form) {
+        form.addEventListener("input", markDirty);
+        form.addEventListener("change", markDirty);
+      }
+
+      if (copyButton && tsUrl) {
+        copyButton.addEventListener("click", function () {
+          const text = tsUrl.textContent || "";
+          if (!text || !navigator.clipboard) return;
+          navigator.clipboard.writeText(text).then(function () {
+            const previous = copyButton.textContent;
+            copyButton.textContent = "Copied";
+            window.setTimeout(function () {
+              copyButton.textContent = previous || "Copy";
+            }, 1200);
+          });
+        });
+      }
+
+      if (!window.EventSource || !document.getElementById("prepare-feedback")) return;
+
+      const stream = new EventSource("/dashboard/stream");
+      function closeStream() {
+        stream.close();
+      }
+
+      stream.addEventListener("prepare.started", function () {
+        setPrepareFeedback("Setting up voice...");
+        if (prepareButton) prepareButton.disabled = true;
+      });
+      stream.addEventListener("prepare.done", function () {
+        setPrepareFeedback("Voice setup complete. Refreshing...");
+        if (prepareButton) prepareButton.disabled = false;
+        window.setTimeout(function () { window.location.reload(); }, 400);
+      });
+      stream.addEventListener("prepare.error", function (event) {
+        let message = "Setup failed.";
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload && payload.error) {
+            message = payload.error;
+          }
+        } catch (_error) {}
+        setPrepareFeedback(message);
+        if (prepareButton && !dirty) prepareButton.disabled = false;
+      });
+      window.addEventListener("beforeunload", function () {
+        closeStream();
+      }, { once: true });
+      document.body.addEventListener("htmx:beforeSwap", function (event) {
+        const target = event.detail && event.detail.target;
+        if (target && target.id === "page-content") {
+          closeStream();
+        }
+      });
+    })();
+  </script>
+</section>

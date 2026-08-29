@@ -1,0 +1,8 @@
+{
+  "name": "Mystic Horizon",
+  "short_name": "Mystic",
+  "display": "standalone",
+  "start_url": "/dashboard/page/home",
+  "background_color": "hsl(165, 12%, 5%)",
+  "theme_color": "hsl(165, 12%, 5%)"
+}
