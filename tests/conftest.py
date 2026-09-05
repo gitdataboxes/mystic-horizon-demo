@@ -11,7 +11,7 @@ from tests.python_helpers import TempAppHome
 
 if pytest is not None:
 
-    @pytest.fixture()
+    @pytest.fixture(autouse=True)
     def app_home():
         with TempAppHome() as home:
             yield home

@@ -1,122 +1,103 @@
-# Mystic Horizon (demo)
+# Mystic Horizon — conversational memory and follow-up
 
-Prototype / demo copy of a personal local-first phone agent. Not a production service, not a company product, not 24/7 at scale.
+[![Checks](https://github.com/gitdataboxes/mystic-horizon-demo/actions/workflows/checks.yml/badge.svg)](https://github.com/gitdataboxes/mystic-horizon-demo/actions/workflows/checks.yml)
 
-This repo is a sanitized snapshot published as a hiring/portfolio sample. Agent homes, API keys, model weights, session logs, and identifying data are not included.
+A local-first voice-agent prototype that remembers conversations, extracts commitments, and schedules follow-up actions—with a dashboard for inspecting people, transcripts, tools, and agent state.
 
-## Demo
+Built with Python, LiveKit, SQLite hybrid retrieval, and local or cloud speech providers. This is a sanitized personal portfolio snapshot; production scale and uptime are not claimed.
 
-[![Mystic Horizon HUD](docs/hud-demo.png)](https://www.loom.com/share/803780d4aa5342349cc6cdb3e74bed15)
+## See it
 
-[Watch the HUD demo on Loom](https://www.loom.com/share/803780d4aa5342349cc6cdb3e74bed15) — live transcript, traces, particle cloud, lightning tool-calls.
+[![Mystic Horizon dashboard](docs/hud-demo.png)](https://www.loom.com/share/803780d4aa5342349cc6cdb3e74bed15)
 
-Initial setup (model download and service boot):
+[Watch the recorded dashboard demo](https://www.loom.com/share/803780d4aa5342349cc6cdb3e74bed15). The recording shows the interface; it is not a latency benchmark.
 
-![Setup](docs/setup.png)
+## The workflow
 
-## What it does
+1. Talk or type through the owner dashboard, or connect a Twilio phone number.
+2. Conversations become locally stored transcripts, facts, people, and commitments.
+3. Hybrid retrieval brings relevant history back into later conversations.
+4. A scheduler evaluates pending commitments and acts, waits, cancels, or escalates.
+5. Inspect the resulting state and tool activity through the dashboard or CLI.
 
-The owner surface is a CRT phosphor HUD: live transcript, oscilloscope-style traces, provider ping, and the agent as a particle cloud with people in orbit. Tool calls flash as lightning on the graph. You talk to it over local LiveKit (mic and speakers) or optionally Twilio.
+```mermaid
+flowchart LR
+    I[Dashboard / CLI / Twilio] --> L[LiveKit and agent tools]
+    L --> E[Transcript and commitment extraction]
+    E --> D[(SQLite: people, facts, actions)]
+    D --> R[Vector + full-text recall]
+    R --> L
+    D --> S[Follow-up scheduler]
+    S --> I
+```
 
-Behind the HUD:
+## What to inspect
 
-- Stores transcripts, facts, actions, and people in local SQLite with FTS5 + sqlite-vec
-- Extracts commitments after conversations and tracks them as actions
-- Runs a scheduler that decides whether to act, wait, cancel, or escalate
-- Bootstraps its identity from a real conversation during `init`
+| Capability | Implementation |
+| --- | --- |
+| Persistent memory, chunking, hybrid retrieval | [memory.py](mystic/memory.py), [db.py](mystic/db.py) |
+| Action lifecycle, retries, scheduling | [actions.py](mystic/actions.py) |
+| Speech adapters and tool-enabled conversations | [voice.py](mystic/voice.py), [worker.py](mystic/worker.py) |
+| Audience-aware tool discovery and execution | [skills.py](mystic/skills.py) |
+| Authenticated dashboard, live events, relationship views | [web.py](mystic/web.py) |
+| Phone readiness and webhook handling | [phone.py](mystic/phone.py), [server.py](mystic/server.py) |
+| Regression and integration coverage | [tests](tests), [verification notes](docs/VERIFICATION.md) |
 
-Hidden easter egg, last: a voice-driven asteroid game. The agent becomes the Belter copilot of the Slow Bell.
+## Try it locally
 
-## Stack
-
-| Layer | Choice |
-|-------|--------|
-| Runtime | Python 3.11+ |
-| Server | `aiohttp` |
-| CLI | `click` |
-| Database | `sqlite3` + `sqlite-vec` + FTS5 |
-| Phone | Twilio + LiveKit |
-| Voice STT | Moonshine (local ONNX) |
-| Voice TTS | Pocket TTS ONNX |
-| LLM | OpenRouter or any OpenAI-compatible endpoint |
-| Embeddings | Local ONNX (`nomic-embed-text-v1.5`) |
-| Logging | `structlog` |
-
-## Install
+Use Python 3.11+ on Linux or macOS. First setup can download native binaries and model assets and may take several minutes. Live conversations need a configured LLM endpoint; local speech does not require a phone account.
 
 ```bash
-git clone https://github.com/gitdataboxes/mystic-horizon-demo
+git clone https://github.com/gitdataboxes/mystic-horizon-demo.git
 cd mystic-horizon-demo
 bash scripts/bootstrap-python.sh
+.venv/bin/mystic-horizon --agent demo setup
 ```
 
-That creates `.venv/` and installs the package with dev dependencies.
+Follow the browser setup flow to select providers and configure credentials. Local STT uses Moonshine; local TTS uses Pocket TTS ONNX. Deepgram STT and Inworld TTS are optional cloud alternatives. Twilio and Tailscale are optional for telephone access.
 
-Models download on init (Moonshine / Pocket TTS ONNX weights land under `~/.mystic-horizon/models/`). They are not vendored here.
+![Setup and model download](docs/setup.png)
 
-Keys in env only. Do not commit `.env`, provider JSON, or Twilio credentials.
-
-If you prefer manual setup:
+Setup allows 30 minutes by default. On a slow first download, extend it explicitly:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -e ".[dev]"
+MH_SETUP_TIMEOUT_SECONDS=3600 .venv/bin/mystic-horizon --agent demo setup
 ```
 
-## CLI
+Progress includes downloaded megabytes where available. A nonpositive timeout disables the setup watchdog. Speech providers without a native streaming method are adapted to the LiveKit streaming interface.
 
-Use the installed console script or run through `.venv/bin/python -m mystic.cli`.
+Useful commands after configuration:
 
 ```bash
-.venv/bin/mystic-horizon --agent <name> init
-.venv/bin/mystic-horizon --agent <name> init --connect-twilio
-.venv/bin/mystic-horizon --agent <name> start
-.venv/bin/mystic-horizon --agent <name> stop
-.venv/bin/mystic-horizon --agent <name> status
-.venv/bin/mystic-horizon --agent <name> status --detail
-.venv/bin/mystic-horizon status --all
-.venv/bin/mystic-horizon --agent <name> dial +15551234567
-.venv/bin/mystic-horizon --agent <name> chat
-.venv/bin/mystic-horizon --agent <name> converse
+.venv/bin/mystic-horizon --agent demo status --detail
+.venv/bin/mystic-horizon --agent demo health
+.venv/bin/mystic-horizon --agent demo people list
+.venv/bin/mystic-horizon --agent demo actions list
+.venv/bin/mystic-horizon --agent demo stop
 ```
 
-## Tests
+## Decisions and tradeoffs
+
+- **Local SQLite + FTS5 + sqlite-vec:** inspectable state in one file, with semantic and exact-term recall. This favors a personal agent over multi-tenant scale.
+- **Local speech and embeddings:** more control over data processing, balanced against model downloads, hardware variation, and native runtime dependencies.
+- **LiveKit + optional Twilio:** browser conversations and telephony share agent behavior, but media transport and turn handling add lifecycle complexity.
+- **Explicit commitments and actions:** state can be inspected independently of a prompt. Extraction and scheduling judgments still require evaluation with representative conversations.
+- **Dashboard visibility:** transcripts, tools, and relationships help explain what happened. Provider ping measures connection latency, not end-to-end conversational latency.
+
+The earlier [TypeScript phone agent](https://github.com/gitdataboxes/phone-agent-demo) documents the Bun/Hono/VAPI architecture. [Mycelium](https://github.com/gitdataboxes/mycelium-demo) is a complementary full-stack community coordination project.
+
+## Verify
 
 ```bash
 bash scripts/test-python.sh
 ```
 
-Or:
+CI runs the non-benchmark suite and Python syntax compilation. Tests use isolated state and mocked providers. Hardware speech quality, real telephone calls, and sustained-load performance require separate manual checks; benchmarks are opt-in.
 
-```bash
-.venv/bin/python -m pytest
-```
+## Data and scope
 
-## Project layout
+Agent state and provider configuration live under `~/.mystic-horizon/<agent-name>/`; shared models live under `~/.mystic-horizon/models/`. Credentials may be saved in local provider configuration, so keep these directories private and outside version control.
 
-```text
-mystic/          Python package (HUD static lives in mystic/_assets/)
-skills/          Shared SKILL.md files + Python handlers
-prompts/         Seed prompt templates
-voices/          Pocket TTS voice prompt wavs
-tests/           Pytest suite
-scripts/         Python bootstrap/test helpers
-vendor/          Pocket TTS ONNX wrapper (downloads weights; no model files)
-```
+Local-first describes storage and optional inference. Selected cloud LLM, STT, TTS, search, and telephony services receive the data necessary for those features. This demo excludes agent homes, session logs, keys, and model weights.
 
-The bundled Pocket voice prompts are `.wav` clips in `voices/`, and new configs default to `Hades` via `voices/hades.wav`.
-
-See `DESIGN.md` for the phosphor HUD language and `GRAPH.md` for the particle/graph surface.
-
-## Data layout
-
-Agent data lives under `~/.mystic-horizon/{agent-name}/` (outside this repo):
-
-- `config/agent.json`
-- `config/providers.json`
-- `config/intelligence.json`
-- `IDENTITY.md`
-- `SOUL.md`
-- `mystic-horizon.db`
-- `faq/`
-- `logs/`
+The visual design is documented in [DESIGN.md](DESIGN.md) and [GRAPH.md](GRAPH.md). A voice-controlled asteroid game is included as an optional interaction experiment.

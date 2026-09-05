@@ -661,6 +661,42 @@ class DependencyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(args[0], ensure_pocket_onnx_models)
         self.assertTrue(callable(args[1]))
 
+    async def test_ensure_dependencies_reports_download_size_details(self) -> None:
+        selections = InitSelections(
+            timezone="America/Los_Angeles",
+            selected_voice_id="Hades",
+            server_port=3456,
+            livekit_port=7880,
+            tts_config={"provider": "pocket"},
+            stt_config={"provider": ""},
+            embedding_config={"provider": "mock"},
+            llm_realtime={"provider": "openrouter", "model": "rt-model"},
+            llm_backend={"provider": "openrouter", "model": "backend-model"},
+            openrouter_key="openrouter-key",
+        )
+        details: list[tuple[str, bool]] = []
+
+        async def _fake_to_thread(fn: object, *args: object) -> None:
+            self.assertEqual(fn, ensure_pocket_onnx_models)
+            callback_factory = args[0]
+            assert callable(callback_factory)
+            progress = callback_factory("encoder.onnx")
+            assert callable(progress)
+            progress(512 * 1024, 1024 * 1024)
+
+        with (
+            patch("mystic.cli.ensure_livekit_binary", new=AsyncMock()),
+            patch("mystic.cli.asyncio.to_thread", new=AsyncMock(side_effect=_fake_to_thread)),
+            patch("mystic.cli.click.echo"),
+        ):
+            await ensure_dependencies(
+                selections,
+                on_detail=lambda message, replace: details.append((message, replace)),
+                quiet=True,
+            )
+
+        self.assertIn(("Pocket TTS encoder.onnx 50% (0.5 / 1.0 MB)", True), details)
+
     async def test_ensure_dependencies_installs_inworld_plugin_during_init(self) -> None:
         selections = InitSelections(
             timezone="America/Los_Angeles",

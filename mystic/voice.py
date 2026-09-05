@@ -411,14 +411,20 @@ async def create_tts(config: TtsConfig, voice_id: str | None) -> agents_tts.TTS:
                 "Install with: pip install livekit-plugins-inworld"
             ) from exc
 
-        return inworld.TTS(
+        return _ensure_streaming_tts(inworld.TTS(
             voice=voice_id or DEFAULT_VOICE,
             model=config.model or "inworld-tts-1.5-mini",
             encoding="LINEAR16",
             sample_rate=TTS_SAMPLE_RATE,
             api_key=config.apiKey,
-        )
-    return PocketTTS(config, voice_id=voice_id)
+        ))
+    return _ensure_streaming_tts(PocketTTS(config, voice_id=voice_id))
+
+
+def _ensure_streaming_tts(tts: agents_tts.TTS) -> agents_tts.TTS:
+    if type(tts).stream is not agents_tts.TTS.stream:
+        return tts
+    return agents_tts.StreamAdapter(tts=tts)
 
 
 def create_llm(config: ResolvedLLMConfig) -> openai.LLM:

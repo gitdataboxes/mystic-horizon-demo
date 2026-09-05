@@ -9,6 +9,7 @@ from typing import Any, cast
 from unittest.mock import ANY, AsyncMock, call, patch
 
 import numpy as np
+from livekit.agents import tts as agents_tts
 
 from mystic.skills import init_skills, reset_registry
 from mystic.audio import ATTENTION_CUES
@@ -19,6 +20,7 @@ from mystic.voice import (
     MysticAgent,
     POCKET_ONNX_BASE,
     PipelineConfig,
+    PocketTTS,
     build_agent_tools,
     collapse_adjacent_repeated_text,
     create_llm,
@@ -27,6 +29,7 @@ from mystic.voice import (
     create_transcript_collector,
     _load_pocket_engine,
     _resolve_pocket_voice,
+    _ensure_streaming_tts,
     _to_pcm16_bytes,
 )
 from mystic.worker import (
@@ -533,12 +536,12 @@ class AgentToolsTests(unittest.IsolatedAsyncioTestCase):
         ):
             result = await write_tool(
                 run_ctx,
-                raw_arguments={"phone_number": "+15555077192"},
+                raw_arguments={"phone_number": "+15305077192"},
             )
 
         self.assertEqual(result, "ok")
         on_tool_event.assert_has_awaits([
-            call("tool_started", "write-twilio-number", args_summary="+15555077192"),
+            call("tool_started", "write-twilio-number", args_summary="+15305077192"),
             call("tool_completed", "write-twilio-number", duration_ms=ANY, error=False),
         ])
 
@@ -607,6 +610,39 @@ class PipelineTests(unittest.IsolatedAsyncioTestCase):
         import_module.assert_called_once_with("livekit.plugins.deepgram")
         self.assertEqual(captured, {"model": "nova-3", "api_key": "dg-key"})
         self.assertEqual(stt, "deepgram-stt")
+
+    def test_ensure_streaming_tts_wraps_synthesize_only_tts(self) -> None:
+        wrapped = _ensure_streaming_tts(PocketTTS(PocketTtsConfig(provider="pocket")))
+
+        self.assertIsInstance(wrapped, agents_tts.StreamAdapter)
+
+    def test_ensure_streaming_tts_keeps_native_streaming_tts(self) -> None:
+        class NativeStreamingTTS(agents_tts.TTS):
+            def __init__(self) -> None:
+                super().__init__(
+                    capabilities=agents_tts.TTSCapabilities(streaming=True),
+                    sample_rate=24_000,
+                    num_channels=1,
+                )
+
+            def synthesize(
+                self,
+                text: str,
+                *,
+                conn_options: object = None,
+            ) -> agents_tts.ChunkedStream:
+                raise NotImplementedError
+
+            def stream(
+                self,
+                *,
+                conn_options: object = None,
+            ) -> agents_tts.SynthesizeStream:
+                raise NotImplementedError
+
+        tts = NativeStreamingTTS()
+
+        self.assertIs(_ensure_streaming_tts(tts), tts)
 
     def test_create_llm_caps_completion_tokens(self) -> None:
         config = ResolvedLLMConfig(

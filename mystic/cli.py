@@ -141,6 +141,7 @@ from mystic.web import (
 
 PID_FILENAME = "mystic-horizon.pid"
 RUNTIME_STATE_FILENAME = "mystic-horizon.runtime.json"
+DEFAULT_SETUP_FLOW_TIMEOUT_SECONDS = 30 * 60
 
 
 @dataclass(slots=True)
@@ -679,14 +680,15 @@ async def ensure_dependencies(
         state = {"last_message": "", "finished": False}
 
         def callback(downloaded: int, total: int | None) -> None:
+            downloaded_mb = downloaded / (1024 * 1024)
             if total and total > 0:
+                total_mb = total / (1024 * 1024)
                 pct = min(100, downloaded * 100 // total)
                 message = f"\r  {label}... {pct}%"
-                detail = f"{label} {pct}%"
+                detail = f"{label} {pct}% ({downloaded_mb:.1f} / {total_mb:.1f} MB)"
             else:
-                mb = downloaded / (1024 * 1024)
-                message = f"\r  {label}... {mb:.1f} MB"
-                detail = f"{label} {mb:.1f} MB"
+                message = f"\r  {label}... {downloaded_mb:.1f} MB"
+                detail = f"{label} {downloaded_mb:.1f} MB"
 
             if message != state["last_message"]:
                 if not quiet:
@@ -1562,6 +1564,32 @@ def _generate_default_agent_name() -> str:
         index += 1
 
 
+def _get_setup_flow_timeout_seconds() -> float | None:
+    raw = os.environ.get("MH_SETUP_TIMEOUT_SECONDS", "").strip()
+    if not raw:
+        return float(DEFAULT_SETUP_FLOW_TIMEOUT_SECONDS)
+    try:
+        timeout_seconds = float(raw)
+    except ValueError:
+        logger.warn("setup.timeout.invalid", value=raw, defaultSeconds=DEFAULT_SETUP_FLOW_TIMEOUT_SECONDS)
+        return float(DEFAULT_SETUP_FLOW_TIMEOUT_SECONDS)
+    if timeout_seconds <= 0:
+        return None
+    return timeout_seconds
+
+
+def _format_setup_timeout(timeout_seconds: float | None) -> str:
+    if timeout_seconds is None:
+        return "without a timeout"
+    if timeout_seconds >= 60 and timeout_seconds % 60 == 0:
+        minutes = int(timeout_seconds // 60)
+        unit = "minute" if minutes == 1 else "minutes"
+        return f"after {minutes} {unit}"
+    seconds = int(timeout_seconds)
+    unit = "second" if seconds == 1 else "seconds"
+    return f"after {seconds} {unit}"
+
+
 def _default_setup_selections(agent_name: str, *, port: int | None = None) -> InitSelections:
     used = discover_used_ports(agent_name)
     server_port = port or allocate_port(DEFAULT_SERVER_PORT, used.server_ports)
@@ -1643,7 +1671,8 @@ async def run_setup(*, agent_name: str | None = None, port: int | None = None) -
         with suppress(Exception):
             _open_browser(login_url)
 
-        await asyncio.wait_for(setup_done.wait(), timeout=300)
+        setup_timeout = _get_setup_flow_timeout_seconds()
+        await asyncio.wait_for(setup_done.wait(), timeout=setup_timeout)
 
         # Close setup server to free the port, then spawn the daemon.
         # The browser stays on the setup page polling /health until the
@@ -1664,8 +1693,13 @@ async def run_setup(*, agent_name: str | None = None, port: int | None = None) -
         }
         return result
     except asyncio.TimeoutError as exc:
-        logger.error("setup.timeout", message="Runtime startup timed out")
-        raise click.ClickException("Setup timed out — check logs and retry") from exc
+        timeout_label = _format_setup_timeout(_get_setup_flow_timeout_seconds())
+        logger.error("setup.timeout", message="Setup flow timed out", timeout=timeout_label)
+        raise click.ClickException(
+            f"Setup timed out {timeout_label}. "
+            "If first-run model downloads are still active, retry with a larger "
+            "MH_SETUP_TIMEOUT_SECONDS value or set it to 0 to disable this watchdog."
+        ) from exc
     finally:
         set_setup_done_event(None)
         set_setup_server(None)
